@@ -3,7 +3,10 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script>
 
-function drawChessBoard(size) {
+function drawChessBoard(size, fen) {
+	fen = fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+	fen = fen.split(/ /)[0]
+
 	var pieces = new Array();
 	pieces["P"] = "&#9817";
 	pieces["R"] = "&#9814";
@@ -21,8 +24,6 @@ function drawChessBoard(size) {
 
 	var d = $('<div/>').addClass("chess-board").css("width", size).css("height", size);
 	var squareSize = size / 8;
-
-	var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 
 	fen = fen.replace( /\//g , "" );
 	fen = fen.replace( /1/g , " " );

@@ -1,69 +1,151 @@
 <html>
 <head>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+</head>
+<body>
+<script src="http://codeorigin.jquery.com/jquery-2.0.3.min.js"></script>
+<script src="http://dglittle.github.io/gl519/index.js"></script>
+<script src="chess.js"></script>
 <script>
 
-function drawChessBoard(size, fen) {
+function makeDraggable(d, onDrop) {
+	d.mousedown(function (e) {
+		e.preventDefault()
+		var pos = d.offset()
+		var oldParent = d.parent()
+		$('body').append(d)
+		d.offset(pos)
+		var offset = {
+			left : e.pageX - pos.left,
+			top : e.pageY - pos.top
+		}
+		var mousemove = function (e) {
+			d.offset({
+				left : e.pageX - offset.left,
+				top : e.pageY - offset.top
+			})
+		}
+		var mouseup = function (e) {
+			$(document).off('mousemove', mousemove).off('mouseup', mouseup)
+			pos = d.offset()
+			oldParent.append(d)
+			d.offset(pos)
+			onDrop(e.pageX, e.pageY)
+		}
+		$(document).on('mousemove', mousemove).on('mouseup', mouseup)
+	})
+}
+
+function drawChessBoard(fen, size, onMove) {
 	fen = fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 	fen = fen.split(/ /)[0]
+	fen = fen.replace(/\d/g, function (x) { return new Array(1 * x + 1).join(' ') }).replace(/\//g, '')
 
-	var pieces = new Array();
-	pieces["P"] = "&#9817";
-	pieces["R"] = "&#9814";
-	pieces["N"] = "&#9816";
-	pieces["B"] = "&#9815";
-	pieces["K"] = "&#9812";
-	pieces["Q"] = "&#9813";
-	pieces["p"] = "&#9823";
-	pieces["r"] = "&#9820";
-	pieces["n"] = "&#9822";
-	pieces["b"] = "&#9821";
-	pieces["k"] = "&#9818";
-	pieces["q"] = "&#9819";
-	pieces[" "] = "";
+	size = size || 400
+	var squareSize = size / 8
 
-	var d = $('<div/>').addClass("chess-board").css("width", size).css("height", size);
-	var squareSize = size / 8;
+	var blackSquareColor = 'lightgrey'
+	var whiteSquareColor = 'white'
 
-	fen = fen.replace( /\//g , "" );
-	fen = fen.replace( /1/g , " " );
-	fen = fen.replace( /2/g , "  " );
-	fen = fen.replace( /3/g , "   " );
-	fen = fen.replace( /4/g , "    " );
-	fen = fen.replace( /5/g , "     " );
-	fen = fen.replace( /6/g , "      " );
-	fen = fen.replace( /7/g , "       " );
-	fen = fen.replace( /8/g , "        " );
+	var blackPieceColor = 'black'
+	var whitePieceColorBottom = 'white'
+	var whitePieceColorTop = 'black'
 
-	var key;
-	for( var i = 7 ; i >= 0 ; i-- ) {
-		for( var j = 0 ; j <= 7 ; j++){
-			bgcolor = ( ( i + j ) % 2 == 0 ) ? "lightgrey" : "white";
-			key = fen[ (7-i)*8+j ];
+	var pieces = {
+		'P' : '\u2659',
+		'R' : '\u2656',
+		'N' : '\u2658',
+		'B' : '\u2657',
+		'K' : '\u2654',
+		'Q' : '\u2655',
+		'p' : '\u265f',
+		'r' : '\u265c',
+		'n' : '\u265e',
+		'b' : '\u265d',
+		'k' : '\u265a',
+		'q' : '\u265b'
+	}
 
-			var sq = $('<div/>').addClass("square").html(pieces[ key ]).css({
-				background : bgcolor,
-				width : squareSize,
-				height : squareSize,
-				padding : '0px',
+	var d = $('<div/>').css({
+		width : size,
+		height : size
+	})
+
+	function makeSquare() {
+		return $('<div/>').css({
+			width : squareSize,
+			height : squareSize,
+			'text-align' : 'center',
+			'vertical-align' : 'top',
+			'font-size' : squareSize * .9,
+			cursor : 'default'
+		})
+	}
+
+	for (var y = 0; y < 8; y++) {
+		for (var x = 0; x < 8; x++) {
+			var square = makeSquare().css({
 				float : 'left',
-				'text-align' : 'center',
-				'vertical-align' : 'top',
-				'font-size' : squareSize * .9,
+				background : (x + y) % 2 == 0 ? whiteSquareColor : blackSquareColor
 			})
-			d.append(sq);
+			var piece = pieces[fen[y * 8 + x]]
+			if (piece) {
+				var pieceDiv
+				if (piece >= '\u265a') {
+					pieceDiv = makeSquare().css({
+						color : blackPieceColor
+					}).text(piece)
+				} else {
+					pieceDiv = makeSquare()
+					pieceDiv.append(makeSquare().css({
+						color : whitePieceColorBottom
+					}).text(whitePieceColorBottom ? String.fromCharCode(piece.charCodeAt(0) + 6) : ''))
+					pieceDiv.append(makeSquare().css({
+						color : whitePieceColorTop,
+						position : 'relative',
+						top : '-' + squareSize + 'px'
+					}).text(whitePieceColorTop ? piece : ''))
+				}
+				;(function () {
+					function getPos(x, y) {
+						if (x < 0 || x > 7 || y < 0 || y > 7)
+							return 'offboard'
+						return String.fromCharCode('a'.charCodeAt(0) + x) + (8 - y)
+					}
+					var from = getPos(x, y)
+					makeDraggable(pieceDiv, function (x, y) {
+						var pos = d.offset()
+						x = Math.floor((x - pos.left) / squareSize)
+						y = Math.floor((y - pos.top) / squareSize)
+						onMove(from + getPos(x, y))
+					})
+				})();
+				square.append(pieceDiv)
+			}
+			d.append(square)
 		}
 	}
 
 	return d
 }
 
+function drawChessGame(fen) {
+	var d = $('<div/>')
+
+	function redrawBoard() {
+		d.empty().append(drawChessBoard(fen, 400, function (move) {
+			fen = applyMove(fen, move) || fen
+			redrawBoard()
+		}).css('box-shadow', '2px 2px 15px rgba(0, 0, 0, 0.5)'))
+	}
+	redrawBoard()
+
+	return d
+}
+
 $(function () {
-	$('body').append(drawChessBoard(400).css('box-shadow', '2px 2px 15px rgba(0, 0, 0, 0.5)'))
+	$('body').append(drawChessGame(startingFen))
 })
-			
+
 </script>
-</head>
-<body>
 </body>
 </html>

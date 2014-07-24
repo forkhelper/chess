@@ -14,25 +14,25 @@ function makeDraggable(d, onDrop) {
 			top : to.pageY - from.top
 		}
 	}
-	d.mousedown(function (e) {
-		e.preventDefault()
-		var pos = d.offset()
-		var oldParent = d.parent()
-		$('body').append(d)
-		d.offset(pos)
-		var offset = getOffset(pos, e)
-		var mousemove = function (e) {
-			d.offset(getOffset(offset, e))
-		}
-		var mouseup = function (e) {
-			$(document).off('mousemove', mousemove).off('mouseup', mouseup)
-			pos = d.offset()
-			oldParent.append(d)
-			d.offset(pos)
-			onDrop(e.pageX, e.pageY)
-		}
-		$(document).on('mousemove', mousemove).on('mouseup', mouseup)
-	})
+	// d.mousedown(function (e) {
+	// 	e.preventDefault()
+	// 	var pos = d.offset()
+	// 	var oldParent = d.parent()
+	// 	$('body').append(d)
+	// 	d.offset(pos)
+	// 	var offset = getOffset(pos, e)
+	// 	var mousemove = function (e) {
+	// 		d.offset(getOffset(offset, e))
+	// 	}
+	// 	var mouseup = function (e) {
+	// 		$(document).off('mousemove', mousemove).off('mouseup', mouseup)
+	// 		pos = d.offset()
+	// 		oldParent.append(d)
+	// 		d.offset(pos)
+	// 		onDrop(e.pageX, e.pageY)
+	// 	}
+	// 	$(document).on('mousemove', mousemove).on('mouseup', mouseup)
+	// })
 	d.on('touchstart', function (e) {
 		e = e.originalEvent
 		e.preventDefault()

@@ -8,21 +8,21 @@
 <script>
 
 function makeDraggable(d, onDrop) {
+	function getOffset(from, to) {
+		return {
+			left : to.pageX - from.left,
+			top : to.pageY - from.top
+		}
+	}
 	d.mousedown(function (e) {
 		e.preventDefault()
 		var pos = d.offset()
 		var oldParent = d.parent()
 		$('body').append(d)
 		d.offset(pos)
-		var offset = {
-			left : e.pageX - pos.left,
-			top : e.pageY - pos.top
-		}
+		var offset = getOffset(pos, e)
 		var mousemove = function (e) {
-			d.offset({
-				left : e.pageX - offset.left,
-				top : e.pageY - offset.top
-			})
+			d.offset(getOffset(offset, e))
 		}
 		var mouseup = function (e) {
 			$(document).off('mousemove', mousemove).off('mouseup', mouseup)
@@ -32,6 +32,28 @@ function makeDraggable(d, onDrop) {
 			onDrop(e.pageX, e.pageY)
 		}
 		$(document).on('mousemove', mousemove).on('mouseup', mouseup)
+	})
+	d.on('touchstart', function (e) {
+		e = e.originalEvent
+		e.preventDefault()
+		var pos = d.offset()
+		var oldParent = d.parent()
+		$('body').append(d)
+		d.offset(pos)
+		var offset = getOffset(pos, e.touches[0])
+		var mousemove = function (e) {
+			e = e.originalEvent
+			d.offset(getOffset(pos, e.touches[0]))
+		}
+		var mouseup = function (e) {
+			e = e.originalEvent
+			$(document).off('touchmove', mousemove).off('touchend', mouseup)
+			pos = d.offset()
+			oldParent.append(d)
+			d.offset(pos)
+			onDrop(e.touches[0].pageX, e.touches[0].pageY)
+		}
+		$(document).on('touchmove', mousemove).on('touchend', mouseup)
 	})
 }
 
@@ -132,10 +154,10 @@ function drawChessGame(fen) {
 	var d = $('<div/>')
 
 	function redrawBoard() {
-		d.empty().append(drawChessBoard(fen, 400, function (move) {
+		d.empty().append(drawChessBoard(fen, Math.min(window.innerWidth, window.innerHeight), function (move) {
 			fen = applyMove(fen, move) || fen
 			redrawBoard()
-		}).css('box-shadow', '2px 2px 15px rgba(0, 0, 0, 0.5)'))
+		}))
 	}
 	redrawBoard()
 
@@ -143,7 +165,7 @@ function drawChessGame(fen) {
 }
 
 $(function () {
-	$('body').append(drawChessGame(startingFen))
+	$('body').css('margin', '0px').append(drawChessGame(startingFen))
 })
 
 </script>

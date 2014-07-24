@@ -1,2 +1,2 @@
-advanced-chess
-==============
+chess
+=====

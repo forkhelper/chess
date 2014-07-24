@@ -17,6 +17,16 @@ function applyMove(fen, move) {
     }
 }
 
+function suggestMoves(fen, time) {
+    ResetGame()
+    InitializeFromFen(fen)
+    g_timeout = time || 40
+    return Search(function (bestMove, score) {
+        _.print("bestMove: " + FormatMove(bestMove))
+        _.print("score: " + score)
+    }, 99, function () {})
+}
+
 // original code below
 
 var g_debug = true;
@@ -214,9 +224,15 @@ function Search(finishMoveCallback, maxPly, finishPlyCallback) {
     g_startTime = (new Date()).getTime();
 
     var i;
+    var moveScores
     for (i = 1; i <= maxPly && g_searchValid; i++) {
-        var tmp = AlphaBeta(i, 0, alpha, beta);
+        var newMoveScores = []
+        var tmp = AlphaBeta(i, 0, alpha, beta, newMoveScores);
         if (!g_searchValid) break;
+        moveScores = newMoveScores
+
+        // work here
+        _.print('ply: ' + i)
 
         value = tmp;
 
@@ -244,6 +260,8 @@ function Search(finishMoveCallback, maxPly, finishPlyCallback) {
     if (finishMoveCallback != null) {
         finishMoveCallback(bestMove, value, (new Date()).getTime() - g_startTime, i - 1);
     }
+
+    return _.sort(moveScores, function (e) { return -e.score })
 }
 
 var minEval = -2000000;
@@ -1023,7 +1041,7 @@ function AllCutNode(ply, depth, beta, allowNull) {
     return realEval;
 }
 
-function AlphaBeta(ply, depth, alpha, beta) {
+function AlphaBeta(ply, depth, alpha, beta, moveScores) {
     if (ply <= 0) {
         return QSearch(alpha, beta, 0);
     }
@@ -1089,7 +1107,15 @@ function AlphaBeta(ply, depth, alpha, beta) {
             return alpha;
         }
 
+        if (moveScores && value > alpha) {
+            moveScores.push({
+                move : FormatMove(currentMove),
+                score : value
+            })
+        }
+
         if (value > realEval) {
+
             if (value >= beta) {
                 var histTo = (currentMove >> 8) & 0xFF;
                 if (g_board[histTo] == 0) {
@@ -1109,9 +1135,15 @@ function AlphaBeta(ply, depth, alpha, beta) {
                 return value;
             }
 
-            if (value > oldAlpha) {
-                hashFlag = hashflagExact;
-                alpha = value;
+            if (!moveScores || (value > alpha + 500)) {
+                if (value > oldAlpha) {
+                    hashFlag = hashflagExact;
+                    if (moveScores) {
+                        alpha = value - 500
+                    } else {
+                        alpha = value;
+                    }
+                }
             }
 
             realEval = value;

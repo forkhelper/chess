@@ -41,6 +41,10 @@ function makeDraggable(d, onDrop) {
 		$('body').append(d)
 		d.offset(pos)
 		var offset = getOffset(pos, e.touches[0])
+
+		console.log('pos', pos)
+		console.log('offset', offset)
+
 		var mousemove = function (e) {
 			e = e.originalEvent
 			d.offset(getOffset(pos, e.touches[0]))
@@ -165,6 +169,37 @@ function drawChessGame(fen) {
 }
 
 $(function () {
+
+	///
+	var preventDefault = false
+	$('body').append($('<button/>').text('preventDefault').click(function () {
+		preventDefault = !preventDefault
+		$(this).css('background', preventDefault ? 'red' : 'grey')
+	}))
+
+	var output = [['test', 0]]
+	var textOutput = $('<textarea style="width:50%;height:80%"/>')
+	$('body').append($('<br/>')).append(textOutput)
+	function captureEvent(e) {
+		$(document).on(e, function () {
+			if (e == output[output.length - 1][0]) {
+				output[output.length - 1][1]++
+			} else {
+				output.push([e, 1])
+			}
+
+			s = []
+			_.each(output, function (o) {
+				s.push(o[0] + (o[1] > 1 ? '(' + o[1] + ')': ''))
+			})
+			textOutput.val(s.join('\n'))
+		})
+	}
+	_.each(['mousedown', 'mouseup', 'mousemove', 'touchstart', 'touchmove', 'touchend'], captureEvent)
+	return
+	///
+
+
 	$('body').css('margin', '0px').append(drawChessGame(startingFen))
 })
 

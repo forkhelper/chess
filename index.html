@@ -4,58 +4,60 @@
 <body>
 <script src="http://codeorigin.jquery.com/jquery-2.0.3.min.js"></script>
 <script src="http://dglittle.github.io/gl519/index.js"></script>
+<script src="utils.js"></script>
 <script src="chess.js"></script>
 <script>
 
 function makeDraggable(d, onDrop) {
-	function getOffset(from, to) {
-		return {
-			left : to.pageX - from.left,
-			top : to.pageY - from.top
-		}
+	function setPos(d, pos) {
+		d.offset({ left : pos[0], top : pos[1] })
 	}
-	// d.mousedown(function (e) {
-	// 	e.preventDefault()
-	// 	var pos = d.offset()
-	// 	var oldParent = d.parent()
-	// 	$('body').append(d)
-	// 	d.offset(pos)
-	// 	var offset = getOffset(pos, e)
-	// 	var mousemove = function (e) {
-	// 		d.offset(getOffset(offset, e))
-	// 	}
-	// 	var mouseup = function (e) {
-	// 		$(document).off('mousemove', mousemove).off('mouseup', mouseup)
-	// 		pos = d.offset()
-	// 		oldParent.append(d)
-	// 		d.offset(pos)
-	// 		onDrop(e.pageX, e.pageY)
-	// 	}
-	// 	$(document).on('mousemove', mousemove).on('mouseup', mouseup)
-	// })
+	d.mousedown(function (e) {
+		e.preventDefault()
+		var pos = getPos(d)
+		var oldParent = d.parent()
+		$('body').append(d)
+		setPos(d, pos)
+		var lastMousePos = getPos(e)
+		var mousemove = function (e) {
+			var mousePos = getPos(e)
+			var delta = sub(mousePos, lastMousePos)
+			lastMousePos = mousePos
+			setPos(d, add(getPos(d), delta))
+		}
+		var mouseup = function (e) {
+			$(document).off('mousemove', mousemove).off('mouseup', mouseup)
+			pos = getPos(d)
+			oldParent.append(d)
+			setPos(d, pos)
+			onDrop(lastMousePos)
+		}
+		$(document).on('mousemove', mousemove).on('mouseup', mouseup)
+	})
 	d.on('touchstart', function (e) {
 		e = e.originalEvent
 		e.preventDefault()
-		var pos = d.offset()
+		var pos = getPos(d)
 		var oldParent = d.parent()
 		$('body').append(d)
-		d.offset(pos)
-		var offset = getOffset(pos, e.touches[0])
-
-		console.log('pos', pos)
-		console.log('offset', offset)
-
+		setPos(d, pos)
+		var lastMousePos = getPos(e.touches[0])
 		var mousemove = function (e) {
 			e = e.originalEvent
-			d.offset(getOffset(pos, e.touches[0]))
+			e.preventDefault()
+			var mousePos = getPos(e.touches[0])
+			var delta = sub(mousePos, lastMousePos)
+			lastMousePos = mousePos
+			setPos(d, add(getPos(d), delta))
 		}
 		var mouseup = function (e) {
 			e = e.originalEvent
+			e.preventDefault()
 			$(document).off('touchmove', mousemove).off('touchend', mouseup)
-			pos = d.offset()
+			pos = getPos(d)
 			oldParent.append(d)
-			d.offset(pos)
-			onDrop(e.touches[0].pageX, e.touches[0].pageY)
+			setPos(d, pos)
+			onDrop(lastMousePos)
 		}
 		$(document).on('touchmove', mousemove).on('touchend', mouseup)
 	})
@@ -132,17 +134,17 @@ function drawChessBoard(fen, size, onMove) {
 					}).text(whitePieceColorTop ? piece : ''))
 				}
 				;(function () {
-					function getPos(x, y) {
+					function getBoardPos(x, y) {
 						if (x < 0 || x > 7 || y < 0 || y > 7)
 							return 'offboard'
 						return String.fromCharCode('a'.charCodeAt(0) + x) + (8 - y)
 					}
-					var from = getPos(x, y)
-					makeDraggable(pieceDiv, function (x, y) {
-						var pos = d.offset()
-						x = Math.floor((x - pos.left) / squareSize)
-						y = Math.floor((y - pos.top) / squareSize)
-						onMove(from + getPos(x, y))
+					var from = getBoardPos(x, y)
+					makeDraggable(pieceDiv, function (pos) {
+						pos = sub(pos, getPos(d))
+						onMove(from + getBoardPos(
+							Math.floor(pos[0] / squareSize),
+							Math.floor(pos[1] / squareSize)))
 					})
 				})();
 				square.append(pieceDiv)
@@ -169,39 +171,6 @@ function drawChessGame(fen) {
 }
 
 $(function () {
-
-	///
-	var preventDefault = false
-	$('body').append($('<button/>').text('preventDefault').click(function () {
-		preventDefault = !preventDefault
-		$(this).css('background', preventDefault ? 'red' : 'grey')
-	}))
-
-	var output = [['test', 0]]
-	var textOutput = $('<textarea style="width:50%;height:80%"/>')
-	$('body').append($('<br/>')).append(textOutput)
-	function captureEvent(e) {
-		$(document).on(e, function (ee) {
-			if (preventDefault)
-				ee.preventDefault()
-			if (e == output[output.length - 1][0]) {
-				output[output.length - 1][1]++
-			} else {
-				output.push([e, 1])
-			}
-
-			s = []
-			_.each(output, function (o) {
-				s.push(o[0] + (o[1] > 1 ? '(' + o[1] + ')': ''))
-			})
-			textOutput.val(s.join('\n'))
-		})
-	}
-	_.each(['mousedown', 'mouseup', 'mousemove', 'touchstart', 'touchmove', 'touchend'], captureEvent)
-	return
-	///
-
-
 	$('body').css('margin', '0px').append(drawChessGame(startingFen))
 })
 

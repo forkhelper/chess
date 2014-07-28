@@ -159,19 +159,28 @@ function drawChessBoard(fen, size, onMove) {
 function drawChessGame(fen) {
 	var d = $('<div/>')
 
+	var history = [fen]
 	function redrawBoard() {
-		d.empty().append(drawChessBoard(fen, Math.min(window.innerWidth, window.innerHeight), function (move) {
-			fen = applyMove(fen, move) || fen
+		d.empty().append(drawChessBoard(history.slice(-1)[0], Math.min(window.innerWidth, window.innerHeight), function (move) {
+			var newFen = applyMove(history.slice(-1)[0], move)
+			if (newFen) history.push(newFen)
 			redrawBoard()
 		}))
 	}
 	redrawBoard()
 
+	d.click(function () {
+		if (history.length > 1) {
+			history.pop()
+			redrawBoard()
+		}
+	})
+
 	return d
 }
 
 $(function () {
-	$('body').css('margin', '0px').append(drawChessGame(startingFen))
+	$('body').css({ margin : '0px' }).append(drawChessGame(startingFen))
 })
 
 </script>

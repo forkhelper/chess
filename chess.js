@@ -10,7 +10,7 @@ function applyMove(fen, move) {
 
     var moves = _.object(_.map(GenerateValidMoves(), function (m) { return [FormatMove(m), m] }))
 
-    move = moves[move]
+    move = moves[move] || moves[move + 'q']
     if (move) {
         MakeMove(move)
         return GetFen()

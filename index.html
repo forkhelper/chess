@@ -166,6 +166,7 @@ function drawChessGame(fen) {
 			if (newFen) history.push(newFen)
 			redrawBoard()
 		}))
+		document.location.href = document.location.href.match(/[^#]*/)[0] + '#' + _.escapeUrl(history.slice(-1)[0])
 	}
 	redrawBoard()
 
@@ -180,7 +181,11 @@ function drawChessGame(fen) {
 }
 
 $(function () {
-	$('body').css({ margin : '0px' }).append(drawChessGame(startingFen))
+	var fen = startingFen
+	try {
+		fen = _.unescapeUrl(document.location.href.match(/\#(.*)/)[1])
+	} catch (e) {}
+	$('body').css({ margin : '0px' }).append(drawChessGame(fen))
 })
 
 </script>
